@@ -1,4 +1,5 @@
 #include "data_provider.h"
+#include "utils.h"
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
@@ -19,29 +20,6 @@ data_provider::~data_provider () {
 	if (cur_db.isOpen()) cur_db.close();
 }
 
-bool data_provider::test_db_file_name (const QString & full_name, QString & error_message) {
-	bool result = false;
-	if (full_name.isEmpty()) {
-		error_message = QObject::tr("File name is empty");
-	} else {
-		QFileInfo finfo(full_name);
-		if (finfo.fileName().isEmpty()) {
-			error_message = QObject::tr("File name is directory");
-		} else {
-			QFile new_file(finfo.absoluteFilePath());
-			bool file_exists = new_file.exists();
-			if (new_file.open(QIODevice::ReadWrite)) {
-				new_file.close();
-				if (!file_exists) new_file.remove();
-				result = true;
-			} else {
-				error_message = QObject::tr("Can not open file for write: ") + new_file.errorString();
-			}
-		}
-	}
-	return result;
-}
-
 bool data_provider::try_connect_new_DB (const QString & full_name, QString & error_message) {
 	bool result = false;
 	if (new_db.isOpen()) new_db.close();
@@ -58,13 +36,13 @@ bool data_provider::try_connect_new_DB (const QString & full_name, QString & err
 		result = true;
 		for (int i = 0; i < 6; i++)
 			if (!query.exec(init_query[i])) {
-				error_message = tr("Can not init database.\n") + query.lastError().text();
+				error_message = tr("Can not init database.") + "\n" + query.lastError().text();
 				result = false;
 				break;
 			}
 		new_db.close();
 	} else {
-		error_message = tr("Can not open database.\n") + new_db.lastError().text();
+		error_message = tr("Can not open database.") + "\n" + new_db.lastError().text();
 	}
 	return result;
 }
@@ -83,7 +61,7 @@ void data_provider::change_db_from_new () {
 bool data_provider::set_file (const QString & full_name, QString * p_error_message) {
 	bool result = false;
 	QString error_message = "";
-	if (test_db_file_name(full_name, error_message)) {
+	if (utils::check_can_be_edit(full_name, error_message)) {
 		QFileInfo finfo(full_name);
 		if (cur_db.isOpen() and cur_db.databaseName() == finfo.absoluteFilePath()) {
 			error_message = tr("This file is already opened");
@@ -94,10 +72,4 @@ bool data_provider::set_file (const QString & full_name, QString * p_error_messa
 	}
 	if (p_error_message) *p_error_message = error_message;
 	return result;
-}
-
-void data_provider::debug_get_info () const {
-	qDebug() << "--------------------------";
-	qDebug() << "full: " << file_full_name << ", dir: " << file_dir << ", name: " << file_name;
-	qDebug() << "--------------------------";
 }

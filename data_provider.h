@@ -1,6 +1,7 @@
 #ifndef DATA_PROVIDER_H
 #define DATA_PROVIDER_H
 
+#include "content_types.h"
 #include <QString>
 #include <QObject>
 #include <QSqlDatabase>
@@ -29,7 +30,6 @@ class data_provider : public QObject
 		QString file_dir;		// Только каталог.
 		QString file_name;		// Только имя файла, полное с расширением.
 		
-		bool test_db_file_name (const QString & full_name, QString & error_message); // Проверка, что указанное имя файла не пустое и файл может быть открыт на запись, либо такой файл можно создать.
 		bool try_connect_new_DB (const QString & full_name, QString & error_message); // Открываем БД и пробуем создать нужные таблицы.
 		void change_db_from_new (); // Прописывает в cur_db то же, что и в new_db, и открывает cur_db.
 
@@ -44,13 +44,6 @@ class data_provider : public QObject
 
 	signals:
 		void database_file_was_changed (); // Сигнал о том, что была открыта другая БД.
-
-
-
-
-	// Служебные методы, для отладки.
-	public:
-		void debug_get_info () const;
 };
 
 #endif // DATA_PROVIDER_H

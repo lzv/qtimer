@@ -5,7 +5,11 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    data_provider.cpp
+    data_provider.cpp \
+    content_types.cpp \
+    utils.cpp
 
 HEADERS  += mainwindow.h \
-    data_provider.h
+    data_provider.h \
+    content_types.h \
+    utils.h
