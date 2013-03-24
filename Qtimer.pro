@@ -7,9 +7,11 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     data_provider.cpp \
     content_types.cpp \
-    utils.cpp
+    utils.cpp \
+    myMenu.cpp
 
 HEADERS  += mainwindow.h \
     data_provider.h \
     content_types.h \
-    utils.h
+    utils.h \
+    myMenu.h

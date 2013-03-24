@@ -1,6 +1,7 @@
 #include <QtGui>
 #include "mainwindow.h"
 #include "data_provider.h"
+#include "myMenu.h"
 
 QSettings MainWindow::settings("LzV progs", "Qtimer");
 
@@ -78,13 +79,13 @@ void MainWindow::create_main_menu ()
 {
 	QMenuBar * mnuBar = new QMenuBar;
 
-	QMenu * pm = new QMenu(tr("File"), mnuBar);
+	myMenu * pm = new myMenu(tr("File"), mnuBar);
 	pm->addAction(actions["open or create"]);
 	pm->addSeparator();
 	pm->addAction(actions["exit"]);
 	mnuBar->addMenu(pm);
 
-	pm = new QMenu(tr("Help"), mnuBar);
+	pm = new myMenu(tr("Help"), mnuBar);
 	pm->addAction(actions["about programm"]);
 	mnuBar->addMenu(pm);
 
