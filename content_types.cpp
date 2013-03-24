@@ -59,3 +59,23 @@ QString time_count :: get_string_for_print (char type) const {
 long int time_count::get_in_seconds () const {
 	return h * 3600 + m * 60 + s;
 }
+
+time_count time_count::operator - (const time_count & val) const {
+	return time_count(get_in_seconds() - val.get_in_seconds());
+}
+
+time_count operator - (const QDateTime & val_left, const QDateTime & val_right) {
+	return time_count(val_left.isValid() and val_right.isValid() ? val_left.secsTo(val_right) : 0);
+}
+
+bool day::isCorrect () const {
+	return start.isValid() and end.isValid() and start < end;
+}
+
+bool day::isIn (const QDateTime & moment) const {
+	return isCorrect() and moment.isValid() and moment >= start and moment <= end;
+}
+
+QString day::getString () const {
+	return data_need_id::getString() + ": " + start.toString("yyyy-MM-dd HH:mm:ss") + " - " + end.toString("yyyy-MM-dd HH:mm:ss");
+}

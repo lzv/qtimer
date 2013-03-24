@@ -24,8 +24,10 @@ class MainWindow : public QMainWindow
 		void create_actions ();					// Добавление действий.
 		void create_main_menu ();				// Создание главного меню.
 		void create_status_bar ();				// Создание строки состояния.
+		QWidget * create_widget_db_not_open ();	// Виджет, когда БД еще не открыта.
 		QWidget * create_widget_out_of_day ();	// Виджет, когда текущий момент вне дня, или дней еще нет.
 		QWidget * create_widget_in_day ();		// Виджет, когда текущий момент внутри дня, и идет основная работа.
+		int get_need_main_widget_index ();		// Индекс главного виджета в зависимости от текущего состояния.
     
 	public:
 		MainWindow ();

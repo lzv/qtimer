@@ -32,8 +32,14 @@ class data_provider : public QObject
 		
 		bool try_connect_new_DB (const QString & full_name, QString & error_message); // Открываем БД и пробуем создать нужные таблицы.
 		void change_db_from_new (); // Прописывает в cur_db то же, что и в new_db, и открывает cur_db.
+		
+		// В следующих методах сосредоточена логика по добавлению и обновлению данных в БД. Методы модифицируют добавляемые данные. 
+		bool check_allow_add_day (day & element, QString & error_message);
+		bool check_allow_udpate_day (day & element, QString & error_message);
 
 	public:
+		static QString datetime_db_format;
+		
 		QString get_file_full_name () const {return file_full_name;}
 		QString get_file_dir () const {return file_dir;}
 		QString get_file_name () const {return file_name;}
@@ -41,6 +47,13 @@ class data_provider : public QObject
 		bool isOpen () {return cur_db.isOpen();}
 
 		bool set_file (const QString & full_name, QString * p_error_message = 0); // Установка нового файла БД. Возвращает true, если файл существует и его можно открыть на запись, либо файла не существует и его можно создать. Иначе возвращает false, не меняя текущие данные. В этом случае error_message перезаписывается текстом ошибки.
+		
+		// Методы получения данных.
+		day get_last_day (); // Последний день из БД. Если дней нет, возвращается не валидный день.
+		
+		// Методы модификации данных. Данные передаются не по ссылке, а копируются.
+		bool add_day (day element, QString * error_message = 0);
+		bool update_day (day element, QString * error_message = 0);
 
 	signals:
 		void database_file_was_changed (); // Сигнал о том, что была открыта другая БД.

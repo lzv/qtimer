@@ -8,10 +8,10 @@ SOURCES += main.cpp\
     data_provider.cpp \
     content_types.cpp \
     utils.cpp \
-    myMenu.cpp
+    myWidgets.cpp
 
 HEADERS  += mainwindow.h \
     data_provider.h \
     content_types.h \
     utils.h \
-    myMenu.h
+    myWidgets.h

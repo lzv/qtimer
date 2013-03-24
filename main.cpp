@@ -1,7 +1,4 @@
 #include <QtGui>
-#include "utils.h"
-#include "content_types.h"
-#include "data_provider.h"
 #include "mainwindow.h"
 
 int main(int argc, char *argv[])

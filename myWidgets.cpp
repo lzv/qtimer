@@ -1,4 +1,4 @@
-#include "myMenu.h"
+#include "myWidgets.h"
 #include <QHelpEvent>
 #include <QToolTip>
 

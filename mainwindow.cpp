@@ -1,7 +1,7 @@
 #include <QtGui>
 #include "mainwindow.h"
 #include "data_provider.h"
-#include "myMenu.h"
+#include "myWidgets.h"
 
 QSettings MainWindow::settings("LzV progs", "Qtimer");
 
@@ -19,6 +19,7 @@ MainWindow::MainWindow ()
 	
 	// Добавляем виджеты для главной области.
 	main_widgets = new QStackedWidget();
+	main_widgets_indexes["db not open"] = main_widgets->addWidget(create_widget_db_not_open());
 	main_widgets_indexes["out of day"] = main_widgets->addWidget(create_widget_out_of_day());
 	main_widgets_indexes["in day"] = main_widgets->addWidget(create_widget_in_day());
 	setCentralWidget(main_widgets);
@@ -31,6 +32,42 @@ MainWindow::MainWindow ()
 		if (QFile(last_file).exists()) data_provider::get_obj()->set_file(last_file);
 		else settings.setValue("last_data_file", "");
 	}
+	
+	// Установим текущий виджет.
+	main_widgets->setCurrentIndex(get_need_main_widget_index());
+}
+
+int MainWindow::get_need_main_widget_index () {
+	int need_index = main_widgets_indexes["db not open"];
+	if (data_provider::get_obj()->isOpen()) {
+		need_index = main_widgets_indexes["out of day"];
+		day last = data_provider::get_obj()->get_last_day();
+		if (last.isValid() and last.isIn()) need_index = main_widgets_indexes["in day"];
+	}
+	return need_index;
+}
+
+QWidget * MainWindow::create_widget_db_not_open () {
+	QWidget * widg = new QWidget;
+	QLabel * mess_for_user = new QLabel(tr("Data file is not open. Please, open or create it."));
+	mess_for_user->setAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+	QPushButton * button = new QPushButton(actions["open or create"]->text());
+	button->setToolTip(actions["open or create"]->toolTip());
+	button->setStatusTip(actions["open or create"]->statusTip());
+	connect(button, SIGNAL(clicked()), SLOT(show_select_file_dialog()));
+	QHBoxLayout * hlay = new QHBoxLayout;
+	hlay->addStretch(10);
+	hlay->addWidget(button);
+	hlay->addStretch(10);
+	QGridLayout * lay = new QGridLayout;
+	lay->addWidget(mess_for_user, 1, 1);
+	lay->addLayout(hlay, 2, 1);
+	lay->setRowStretch(0, 10);
+	lay->setRowStretch(3, 10);
+	lay->setColumnStretch(0, 10);
+	lay->setColumnStretch(2, 10);
+	widg->setLayout(lay);
+	return widg;
 }
 
 QWidget * MainWindow::create_widget_out_of_day () {
@@ -111,4 +148,5 @@ void MainWindow::set_params_from_new_db () {
 	QString new_db_name = (data_provider::get_obj()->isOpen() ? data_provider::get_obj()->get_file_full_name() : "");
 	status_bar_label->setText(new_db_name.isEmpty() ? tr("Data file is not open.") : tr("Current data file") + ": " + new_db_name);
 	settings.setValue("last_data_file", new_db_name);
+	main_widgets->setCurrentIndex(get_need_main_widget_index());
 }
