@@ -17,4 +17,15 @@ class myMenu : public QMenu
 		virtual bool event (QEvent *);
 };
 
+class dayInLine : public QWidget
+{
+	Q_OBJECT
+
+	protected:
+		void paintEvent (QPaintEvent *);
+
+	public:
+		dayInLine (QWidget * parent = 0);
+};
+
 #endif // MYMENU_H

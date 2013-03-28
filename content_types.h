@@ -38,11 +38,11 @@ class data_need_id
 		int id;
 
 		explicit data_need_id (int var_id = 0) : id(var_id) {}
+		virtual ~data_need_id () {}
 
 		bool isValid () {return id > 0;}
 		bool operator < (const data_need_id & val) const {return id < val.id;}
 		virtual bool isCorrect () const = 0; // Проверяется корректность только самих данных, без привязки к другим данным или логике программы. id не учитывается.
-		virtual QString getString () const {return QString::number(id);}
 };
 
 // Класс для учитываемого дня.
@@ -56,7 +56,19 @@ class day : public data_need_id
 
 		bool isCorrect () const;
 		bool isIn (const QDateTime & moment = QDateTime::currentDateTime()) const;
-		QString getString () const;
+		long int getSeconds () const;
+};
+
+// Родительский класс для типа данных - работ. 
+class work : public data_need_id {
+
+	public:
+		QString name;
+		int plan;
+
+		explicit work (int var_id = 0, const QString & var_name = "", int var_plan = 0) : data_need_id(var_id), name(var_name), plan(var_plan) {}
+
+		bool isCorrect () const {return !name.isEmpty() and plan > 0;}
 };
 
 #endif // CONTENT_TYPES_H

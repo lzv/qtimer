@@ -76,6 +76,8 @@ bool day::isIn (const QDateTime & moment) const {
 	return isCorrect() and moment.isValid() and moment >= start and moment <= end;
 }
 
-QString day::getString () const {
-	return data_need_id::getString() + ": " + start.toString("yyyy-MM-dd HH:mm:ss") + " - " + end.toString("yyyy-MM-dd HH:mm:ss");
+long int day::getSeconds () const {
+	long int result = 0;
+	if (isCorrect()) result = end.toTime_t() - start.toTime_t();
+	return result;
 }

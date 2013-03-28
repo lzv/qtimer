@@ -9,7 +9,7 @@
 
 QSqlDatabase data_provider::cur_db = QSqlDatabase::addDatabase("QSQLITE");
 QSqlDatabase data_provider::new_db = QSqlDatabase::addDatabase("QSQLITE", "new db");
-QString data_provider::datetime_db_format = "yyyy-MM-dd HH:mm:ss";
+QString data_provider::DATETIME_DB_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
 data_provider * data_provider::get_obj() {
 	static data_provider obj;
@@ -29,12 +29,34 @@ bool data_provider::check_allow_add_day (day & element, QString & error_message)
 	QDateTime now = QDateTime::currentDateTime();
 	element.start = now;
 	if (last_day.isValid() and last_day.end >= now) {
-		error_message = tr("Day add error") + " - " + tr("current day is not end");
+		error_message = tr("Add day error") + " - " + tr("current day is not end");
 	} else if (!element.isCorrect()) {
-		error_message = tr("Day add error") + " - " + tr("added day is not correct");
+		error_message = tr("Add day error") + " - " + tr("added day is not correct");
 	} else {
 		result = true;
 		element.id = last_day.id + 1;
+	}
+	return result;
+}
+
+// Имя нового дела не должно совпадать с уже имеющимися делами. Дело должно быть корректным.
+bool data_provider::check_allow_add_work (work & element, QString & error_message) {
+	bool result = false;
+	if (element.isCorrect()) {
+		element.id = 0;
+		QList<work> db_works = get_works();
+		result = true;
+		for (QList<work>::const_iterator i = db_works.begin(); i != db_works.end(); ++i) {
+			if (element.name == i->name) {
+				result = false;
+				error_message = tr("Add work error") + " - " + tr("duplication of name");
+				break;
+			}
+			if (element.id < i->id) element.id = i->id;
+		}
+		if (result) element.id++;
+	} else {
+		error_message = tr("Add work error") + " - " + tr("added work is not correct");
 	}
 	return result;
 }
@@ -55,21 +77,43 @@ bool data_provider::check_allow_udpate_day (day & element, QString & error_messa
 	return result;
 }
 
+// Элемент с указанным id должен существовать. Данные должны быть корректны. Если меняется название, оно не должно совпадать с уже существующими делами.
+bool data_provider::check_allow_update_work (work & element, QString & error_message) {
+	bool result = false;
+	work selected = get_work(element.id);
+	if (selected.isValid()) {
+		if (element.isCorrect()) {
+			result = true;
+			if (selected.name != element.name) {
+				QList<work> db_works = get_works();
+				for (QList<work>::const_iterator i = db_works.begin(); i != db_works.end(); ++i)
+					if (element.name == i->name) { /* id не проверяем, так как проверка в  if выше */
+						result = false;
+						error_message = error_message = tr("Update work error") + " - " + tr("duplication of name");
+						break;
+					}
+			}
+		} else {
+			error_message = tr("Update work error") + " - " + tr("updated work is not correct");
+		}
+	} else {
+		error_message = tr("Update work error") + " - " + tr("updated work is not exists");
+	}
+	return result;
+}
+
 bool data_provider::try_connect_new_DB (const QString & full_name, QString & error_message) {
 	bool result = false;
 	if (new_db.isOpen()) new_db.close();
 	new_db.setDatabaseName(full_name);
 	if (new_db.open()) {
 		QSqlQuery query(new_db);
-		QString init_query[6];
-		init_query[0] = "CREATE TABLE IF NOT EXISTS works (id INTEGER PRIMARY KEY, name TEXT, type TEXT, created_datetime TEXT, deleted INTEGER)";
-		init_query[1] = "CREATE TABLE IF NOT EXISTS one_works (id INTEGER PRIMARY KEY, work_id INTEGER, count INTEGER)";
-		init_query[2] = "CREATE TABLE IF NOT EXISTS long_works (id INTEGER PRIMARY KEY, work_id INTEGER, plan INTEGER)";
-		init_query[3] = "CREATE TABLE IF NOT EXISTS days (id INTEGER PRIMARY KEY, datetime_start TEXT, datetime_end TEXT)";
-		init_query[4] = "CREATE TABLE IF NOT EXISTS time_periods (id INTEGER PRIMARY KEY, work_id INTEGER, datetime_start TEXT, datetime_end TEXT)";
-		init_query[5] = "CREATE TABLE IF NOT EXISTS work_checkeds (id INTEGER PRIMARY KEY, work_id INTEGER, datetime TEXT)";
+		QString init_query[3];
+		init_query[0] = "CREATE TABLE IF NOT EXISTS works (id INTEGER PRIMARY KEY, name TEXT, plan INTEGER)";
+		init_query[1] = "CREATE TABLE IF NOT EXISTS days (id INTEGER PRIMARY KEY, datetime_start TEXT, datetime_end TEXT)";
+		init_query[2] = "CREATE TABLE IF NOT EXISTS time_periods (id INTEGER PRIMARY KEY, work_id INTEGER, datetime_start TEXT, datetime_end TEXT)";
 		result = true;
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 3; i++)
 			if (!query.exec(init_query[i])) {
 				error_message = tr("Can not init database.") + "\n" + query.lastError().text();
 				result = false;
@@ -114,12 +158,46 @@ day data_provider::get_last_day () {
 	if (cur_db.isOpen()) {
 		QSqlQuery query(cur_db);
 		QString sql = "SELECT * FROM days ORDER BY id DESC LIMIT 1";
+		if (query.exec(sql) and query.next()) {
+			QSqlRecord rec = query.record();
+			result.id = query.value(rec.indexOf("id")).toInt();
+			result.start = QDateTime::fromString(query.value(rec.indexOf("datetime_start")).toString(), DATETIME_DB_FORMAT);
+			result.end = QDateTime::fromString(query.value(rec.indexOf("datetime_end")).toString(), DATETIME_DB_FORMAT);
+		}
+	}
+	return result;
+}
+
+work data_provider::get_work (int id) {
+	work result;
+	if (id > 0 and cur_db.isOpen()) {
+		QSqlQuery query(cur_db);
+		query.prepare("SELECT * FROM works WHERE id = :id");
+		query.bindValue(":id", id);
+		if (query.exec() and query.next()) {
+			QSqlRecord rec = query.record();
+			result.id = query.value(rec.indexOf("id")).toInt();
+			result.name = query.value(rec.indexOf("name")).toString();
+			result.plan = query.value(rec.indexOf("plan")).toInt();
+		}
+	}
+	return result;
+}
+
+QList<work> data_provider::get_works () {
+	QList<work> result;
+	if (cur_db.isOpen()) {
+		QSqlQuery query(cur_db);
+		QString sql = "SELECT * FROM works ORDER BY id ASC";
 		if (query.exec(sql)) {
 			QSqlRecord rec = query.record();
-			if (query.next()) {
-				result.id = query.value(rec.indexOf("id")).toInt();
-				result.start = QDateTime::fromString(query.value(rec.indexOf("datetime_start")).toString(), datetime_db_format);
-				result.end = QDateTime::fromString(query.value(rec.indexOf("datetime_end")).toString(), datetime_db_format);
+			int index_id = rec.indexOf("id"), index_name = rec.indexOf("name"), index_plan = rec.indexOf("plan");
+			work element;
+			while (query.next()) {
+				element.id = query.value(index_id).toInt();
+				element.name = query.value(index_name).toString();
+				element.plan = query.value(index_plan).toInt();
+				result.push_back(element);
 			}
 		}
 	}
@@ -130,15 +208,15 @@ bool data_provider::add_day (day element, QString * error_message) {
 	bool result = false;
 	QString err;
 	if (!cur_db.isOpen()) {
-		err = tr("Day add error") + " - " + tr("data file is not open");
+		err = tr("Add day error") + " - " + tr("data file is not open");
 	} else if (check_allow_add_day(element, err)) {
 		QSqlQuery query(cur_db);
 		query.prepare("INSERT INTO days (id, datetime_start, datetime_end) VALUES (:id, :start, :end)");
 		query.bindValue(":id", element.id);
-		query.bindValue(":start", element.start.toString(datetime_db_format));
-		query.bindValue(":end", element.end.toString(datetime_db_format));
+		query.bindValue(":start", element.start.toString(DATETIME_DB_FORMAT));
+		query.bindValue(":end", element.end.toString(DATETIME_DB_FORMAT));
 		if (query.exec()) result = true;
-		else err = tr("Day add error") + " - " + query.lastError().text();
+		else err = tr("Add day error") + " - " + query.lastError().text();
 	}
 	if (error_message) *error_message = err;
 	return result;
@@ -152,8 +230,8 @@ bool data_provider::update_day (day element, QString * error_message) {
 	} else if (check_allow_udpate_day(element, err)) {
 		QSqlQuery query(cur_db);
 		query.prepare("UPDATE days SET datetime_start = :start, datetime_end = :end WHERE id = :id");
-		query.bindValue(":start", element.start.toString(datetime_db_format));
-		query.bindValue(":end", element.end.toString(datetime_db_format));
+		query.bindValue(":start", element.start.toString(DATETIME_DB_FORMAT));
+		query.bindValue(":end", element.end.toString(DATETIME_DB_FORMAT));
 		query.bindValue(":id", element.id);
 		if (query.exec()) result = true;
 		else err = tr("Day update error") + " - " + query.lastError().text();
