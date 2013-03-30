@@ -5,7 +5,8 @@
 QSettings MainWindow::settings("LzV progs", "Qtimer");
 
 MainWindow::MainWindow ()
-	: works_list_window_width(500), works_list_window_height(200)
+	: need_reaction_for_signal_cellChanged(true), 
+	  for_add_work_was_modif_name(false), for_add_work_was_modif_plan(false)
 {
 	// Установки главного окна.
 	setWindowTitle(tr("Time management", "main window title"));
@@ -26,7 +27,11 @@ MainWindow::MainWindow ()
 	setCentralWidget(main_widgets);
 	
 	connect(data_provider::get_obj(), SIGNAL(database_file_was_changed()), SLOT(set_params_from_new_db()));
-	connect(data_provider::get_obj(), SIGNAL(change_in_out_day()), SLOT(change_main_widget()));
+	connect(data_provider::get_obj(), SIGNAL(out_from_day()), SLOT(change_main_widget()));
+	connect(data_provider::get_obj(), SIGNAL(works_updated()), SLOT(update_works_list_window()));
+	connect(data_provider::get_obj(), SIGNAL(works_updated()), SLOT(update_widget_in_day()));
+	connect(& delete_work_buttons_map, SIGNAL(mapped(int)), SLOT(delete_work(int)));
+	connect(works_list_table, SIGNAL(cellChanged(int,int)), SLOT(modif_work_from_table_widget(int,int)));
 	
 	// Восстановление настроек. Должно идти после соединения сигналов и слотов.
 	QString last_file = settings.value("last_data_file", "").toString();
@@ -36,7 +41,8 @@ MainWindow::MainWindow ()
 	}
 }
 
-int MainWindow::get_need_main_widget_index () {
+int MainWindow::get_need_main_widget_index ()
+{
 	int need_index = main_widgets_indexes["db not open"];
 	if (data_provider::get_obj()->isOpen()) {
 		need_index = main_widgets_indexes["out of day"];
@@ -46,14 +52,15 @@ int MainWindow::get_need_main_widget_index () {
 	return need_index;
 }
 
-void MainWindow::create_works_list_window () {
-	QLabel * message = new QLabel(tr("You can add, delete or edit works."));
+void MainWindow::create_works_list_window ()
+{
+	QLabel * message = new QLabel(tr("You can add, delete or edit works. For edit work make double click on cell. For add work insert data in the lowest row. For delete work click delete button. <b>Warning:</b> you can not restore work after deletion."));
 	message->setWordWrap(true);
 	works_list_table = new QTableWidget();
 	works_list_table->setColumnCount(3);
-	QStringList headers;
-	headers << tr("ID") << tr("Name") << tr("Plan");
-	works_list_table->setHorizontalHeaderLabels(headers);
+	works_list_table->setHorizontalHeaderLabels(QStringList() << tr("Name") << tr("Plan") << "");
+	works_list_table->setColumnWidth(0, 515);
+	works_list_table->setColumnWidth(1, 40);
 	QPushButton * close_button = new QPushButton(tr("Close"));
 	connect(close_button, SIGNAL(clicked()), & works_list_window, SLOT(hide()));
 	QVBoxLayout * lay = new QVBoxLayout;
@@ -61,11 +68,49 @@ void MainWindow::create_works_list_window () {
 	lay->addWidget(works_list_table);
 	lay->addWidget(close_button);
 	works_list_window.setLayout(lay);
-	works_list_window.resize(works_list_window_width, works_list_window_height);
+	works_list_window.resize(700, 300);
 }
 
 void MainWindow::update_works_list_window () {
-	
+	bool need_reaction_value = need_reaction_for_signal_cellChanged;
+	need_reaction_for_signal_cellChanged = false;
+	QList<work> works = data_provider::get_obj()->get_works();
+	int row_count = works_list_table->rowCount();
+	for (int i = 0; i < row_count; ++i) works_list_table->removeRow(0);
+	row_count = 0;
+	for (QList<work>::const_iterator i = works.begin(); i != works.end(); ++i) {
+		works_list_table->insertRow(row_count);
+		QTableWidgetItem * id_item = new QTableWidgetItem;
+		QTableWidgetItem * name_item = new QTableWidgetItem;
+		QTableWidgetItem * plan_item = new QTableWidgetItem;
+		id_item->setData(Qt::DisplayRole, i->id);
+		name_item->setData(Qt::DisplayRole, i->name);
+		plan_item->setData(Qt::DisplayRole, i->plan);
+		QPushButton * delete_button = new QPushButton(tr("Delete"));
+		delete_work_buttons_map.setMapping(delete_button, i->id);
+		connect(delete_button, SIGNAL(clicked()), & delete_work_buttons_map, SLOT(map()));
+		works_list_table->setVerticalHeaderItem(row_count, id_item);
+		works_list_table->setItem(row_count, 0, name_item);
+		works_list_table->setItem(row_count, 1, plan_item);
+		works_list_table->setCellWidget(row_count, 2, delete_button);
+		++row_count;
+	}
+	works_list_table->insertRow(row_count);
+	QTableWidgetItem * empty_item1 = new QTableWidgetItem;
+	empty_item1->setData(Qt::DisplayRole, QString(""));
+	empty_item1->setFlags(empty_item1->flags() & ~Qt::ItemIsSelectable & ~Qt::ItemIsEditable);
+	QTableWidgetItem * empty_item2 = new QTableWidgetItem(*empty_item1);
+	QTableWidgetItem * name_item = new QTableWidgetItem;
+	QTableWidgetItem * plan_item = new QTableWidgetItem;
+	name_item->setData(Qt::DisplayRole, QString(""));
+	plan_item->setData(Qt::DisplayRole, int(0));
+	works_list_table->setVerticalHeaderItem(row_count, empty_item1);
+	works_list_table->setItem(row_count, 0, name_item);
+	works_list_table->setItem(row_count, 1, plan_item);
+	works_list_table->setItem(row_count, 2, empty_item2);
+	for_add_work_was_modif_name = false;
+	for_add_work_was_modif_plan = false;
+	need_reaction_for_signal_cellChanged = need_reaction_value;
 }
 
 QWidget * MainWindow::create_widget_db_not_open () {
@@ -148,22 +193,24 @@ void MainWindow::update_widget_in_day () {
 	
 }
 
-void MainWindow::add_day_button_clicked () {
+void MainWindow::add_day_button_clicked ()
+{
 	day added_day(0, QDateTime::currentDateTime(), out_of_day_add_day_edit->dateTime());
 	QString error("");
 	if (data_provider::get_obj()->add_day(added_day, & error)) change_main_widget();
-	else QMessageBox(QMessageBox::Warning, tr("Add day error"), error, QMessageBox::Ok).exec();
+	else show_warning_message(tr("Add day error"), error);
 }
 
-void MainWindow::update_day_button_clicked () {
+void MainWindow::update_day_button_clicked ()
+{
 	day last_day = data_provider::get_obj()->get_last_day();
 	if (last_day.isValid()) {
 		last_day.end = out_of_day_update_day_edit->dateTime();
 		QString error("");
 		if (data_provider::get_obj()->update_day(last_day, & error)) change_main_widget();
-		else QMessageBox(QMessageBox::Warning, tr("Update day error"), error, QMessageBox::Ok).exec();
+		else show_warning_message(tr("Update day error"), error);
 	} else {
-		QMessageBox(QMessageBox::Warning, tr("Update day error"), tr("Update day error") + " - " + tr("the last day is not exists."), QMessageBox::Ok).exec();
+		show_warning_message(tr("Update day error"), tr("Update day error") + " - " + tr("the last day is not exists."));
 	}
 }
 
@@ -182,7 +229,8 @@ QGridLayout * MainWindow::get_stretch_QGridLayout (int row1, int row2, int col1,
 	return lay;
 }
 
-void MainWindow::create_status_bar () {
+void MainWindow::create_status_bar ()
+{
 	QStatusBar * status_bar = new QStatusBar;
 	status_bar_label = new QLabel(tr("Data file is not open."));
 	status_bar->addWidget(status_bar_label);
@@ -241,7 +289,7 @@ void MainWindow::show_select_file_dialog (const QString * cur_dir)
 	QString selected_file = QFileDialog::getSaveFileName(this, tr("Select/create file..."), dir, "", 0, QFileDialog::DontConfirmOverwrite);
 	QString error("");
 	if (!selected_file.isEmpty() and !data_provider::get_obj()->set_file(selected_file, & error)) {
-		QMessageBox(QMessageBox::Warning, tr("Open/create error"), tr("Can not open/create file.") + "\n" + error, QMessageBox::Ok).exec();
+		show_warning_message(tr("Open/create error"), tr("Can not open/create file.") + "\n" + error);
 		show_select_file_dialog(& selected_file);
 	}
 }
@@ -271,4 +319,45 @@ void MainWindow::set_params_from_new_db () {
 	status_bar_label->setText(new_db_name.isEmpty() ? tr("Data file is not open.") : tr("Current data file") + ": " + new_db_name);
 	settings.setValue("last_data_file", new_db_name);
 	change_main_widget();
+}
+
+void MainWindow::show_warning_message (const QString & title, const QString & message) {
+	QMessageBox(QMessageBox::Warning, title, message, QMessageBox::Ok).exec();
+}
+
+void MainWindow::delete_work (int id) {
+	QString error("");
+	QMessageBox question(QMessageBox::Warning, tr("Are you sure?"), tr("You can not restore work after deletion. Do you really want to delete?"), QMessageBox::Yes | QMessageBox::No);
+	if (question.exec() == QMessageBox::Yes and !data_provider::get_obj()->delete_work(id, & error)) {
+		show_warning_message(tr("Delete work error"), error);
+		update_works_list_window();
+	}
+}
+
+void MainWindow::modif_work_from_table_widget (int row, int col) {
+	if (need_reaction_for_signal_cellChanged) {
+		int last_row = works_list_table->rowCount() - 1;
+		QString new_name = works_list_table->item(row, 0)->text();
+		int new_plan = works_list_table->item(row, 1)->text().toInt();
+		work element(0, new_name, new_plan);
+		QString error("");
+		if (row == last_row) {
+			if (col == 0) for_add_work_was_modif_name = true;
+			if (col == 1) for_add_work_was_modif_plan = true;
+			if (
+					for_add_work_was_modif_name 
+					and for_add_work_was_modif_plan 
+					and !data_provider::get_obj()->add_work(element, & error)
+				) {
+				show_warning_message(tr("Add work error"), error);
+				update_works_list_window();
+			}
+		} else {
+			element.id = works_list_table->verticalHeaderItem(row)->text().toInt();
+			if (!data_provider::get_obj()->update_work(element, & error)) {
+				show_warning_message(tr("Update work error"), error);
+				update_works_list_window();
+			}
+		}
+	}
 }

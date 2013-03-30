@@ -60,11 +60,11 @@ class data_provider : public QObject
 		bool update_day (day element, QString * error_message = 0);
 		bool add_work (work element, QString * error_message = 0);
 		bool update_work (work element, QString * error_message = 0);
-		bool delete_work (int id);
+		bool delete_work (int id, QString * error_message = 0);
 
 	signals:
 		void database_file_was_changed ();	// Была открыта другая БД.
-		void change_in_out_day ();			// Учитываемый день начался либо завершился.
+		void out_from_day ();				// Учитываемый день начался либо завершился.
 		void works_updated ();				// Изменения в делах - добавлено, удалено или отредактировано.
 };
 

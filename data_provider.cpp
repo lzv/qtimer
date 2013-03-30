@@ -226,7 +226,7 @@ bool data_provider::update_day (day element, QString * error_message) {
 	bool result = false;
 	QString err;
 	if (!cur_db.isOpen()) {
-		err = tr("Day update error") + " - " + tr("data file is not open");
+		err = tr("Update day error") + " - " + tr("data file is not open");
 	} else if (check_allow_udpate_day(element, err)) {
 		QSqlQuery query(cur_db);
 		query.prepare("UPDATE days SET datetime_start = :start, datetime_end = :end WHERE id = :id");
@@ -234,7 +234,85 @@ bool data_provider::update_day (day element, QString * error_message) {
 		query.bindValue(":end", element.end.toString(DATETIME_DB_FORMAT));
 		query.bindValue(":id", element.id);
 		if (query.exec()) result = true;
-		else err = tr("Day update error") + " - " + query.lastError().text();
+		else err = tr("Update day error") + " - " + query.lastError().text();
+	}
+	if (error_message) *error_message = err;
+	return result;
+}
+
+
+bool data_provider::delete_work (int id, QString * error_message) {
+	bool result = false;
+	QString err;
+	if (id <= 0) {
+		err = tr("Delete work error") + " - " + tr("id is not correct");
+	} else if (!cur_db.isOpen()) {
+		err = tr("Delete work error") + " - " + tr("data file is not open");
+	} else {
+		QSqlQuery query(cur_db);
+		QString sql1 = QString("DELETE FROM time_periods WHERE work_id = %1").arg(id);
+		QString sql2 = QString("DELETE FROM works WHERE id = %1").arg(id);
+		if (cur_db.transaction()) {
+			if (query.exec(sql1) and query.exec(sql2)) {
+				if (cur_db.commit()) {
+					result = true;
+					emit works_updated();
+				} else {
+					err = tr("Delete work error") + " - " + tr("can not commit. Database error: ") + cur_db.lastError().text();
+					cur_db.rollback();
+				}
+			} else {
+				err = tr("Delete work error") + " - " + query.lastError().text();
+				cur_db.rollback();
+			}
+		} else {
+			err = tr("Delete work error") + " - " + tr("can not start transaction. Database error: ") + cur_db.lastError().text();
+		}
+	}
+	if (error_message) *error_message = err;
+	return result;
+}
+
+
+bool data_provider::add_work (work element, QString * error_message) {
+	bool result = false;
+	QString err;
+	if (!cur_db.isOpen()) {
+		err = tr("Add work error") + " - " + tr("data file is not open");
+	} else if (check_allow_add_work(element, err)) {
+		QSqlQuery query(cur_db);
+		query.prepare("INSERT INTO works (id, name, plan) VALUES (:id, :name, :plan)");
+		query.bindValue(":id", element.id);
+		query.bindValue(":name", element.name);
+		query.bindValue(":plan", element.plan);
+		if (query.exec()) {
+			result = true;
+			emit works_updated();
+		} else {
+			err = tr("Add work error") + " - " + query.lastError().text();
+		}
+	}
+	if (error_message) *error_message = err;
+	return result;
+}
+
+bool data_provider::update_work (work element, QString * error_message) {
+	bool result = false;
+	QString err;
+	if (!cur_db.isOpen()) {
+		err = tr("Update work error") + " - " + tr("data file is not open");
+	} else if (check_allow_update_work(element, err)) {
+		QSqlQuery query(cur_db);
+		query.prepare("UPDATE works SET name = :name, plan = :plan WHERE id = :id");
+		query.bindValue(":name", element.name);
+		query.bindValue(":plan", element.plan);
+		query.bindValue(":id", element.id);
+		if (query.exec()) {
+			result = true;
+			emit works_updated();
+		} else {
+			err = tr("Update work error") + " - " + query.lastError().text();
+		}
 	}
 	if (error_message) *error_message = err;
 	return result;
