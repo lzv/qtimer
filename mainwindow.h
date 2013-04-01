@@ -11,6 +11,7 @@
 #include <QDateTimeEdit>
 #include <QTableWidget>
 #include <QSignalMapper>
+#include <QComboBox>
 #include "data_provider.h"
 #include "myWidgets.h"
 
@@ -34,7 +35,10 @@ class MainWindow : public QMainWindow
 		QPushButton * out_of_day_update_day_button;
 		
 		// Виджеты для окна in_day.
-		dayInLine * in_day_line_of_day; // Линия дня с временными отметками.
+		dayInLine * in_day_line_of_day;		// Линия дня с временными отметками.
+		QComboBox * works_dropdown_list;	// Выпадающий список дел.
+		QPushButton * start_stop_button;	// Кнопка начала/остановки учета.
+		QTableWidget * planned_works_table;	// Список дел, которые еще запланированы на текущий день.
 		
 		// Список дел.
 		QWidget works_list_window;
@@ -75,6 +79,7 @@ class MainWindow : public QMainWindow
 		
 		void delete_work (int id);			// При ошибке показывается сообщение, иначе виджеты обновляются.
 		void modif_work_from_table_widget (int row, int col); // Обновление или добавление дела. В параметрах - координаты ячейки, измененные пользователем. 
+		void start_stop_button_clicked ();	// Была нажата кнопка старт/стоп для учета дела.
 };
 
 #endif // MAINWINDOW_H

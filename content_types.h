@@ -29,8 +29,6 @@ class time_count
 		time_count operator - (const time_count & val) const;
 };
 
-time_count operator - (const QDateTime & val_left, const QDateTime & val_right);
-
 // Для данных, которые хранятся в БД.
 class data_need_id 
 {
@@ -59,7 +57,7 @@ class day : public data_need_id
 		long int getSeconds () const;
 };
 
-// Родительский класс для типа данных - работ. 
+// Дело. 
 class work : public data_need_id {
 
 	public:
@@ -69,6 +67,22 @@ class work : public data_need_id {
 		explicit work (int var_id = 0, const QString & var_name = "", int var_plan = 0) : data_need_id(var_id), name(var_name), plan(var_plan) {}
 
 		bool isCorrect () const {return !name.isEmpty() and plan > 0;}
+};
+
+// Класс для временных периодов.
+class time_period : public data_need_id {
+
+	public:
+		int work_id;
+		QDateTime start;
+		QDateTime end;
+
+		explicit time_period (int var_id = 0, int var_work_id = 0, QDateTime var_start = QDateTime(), QDateTime var_end = QDateTime()) : data_need_id(var_id), work_id(var_work_id), start(var_start), end(var_end) {}
+		
+		bool isClosed () const {return end.isValid();}
+		bool isOpened () const {return !end.isValid();}
+		bool isCorrect () const {return work_id > 0 and start.isValid() and (!end.isValid() or start < end);}
+		int length_sec () const;
 };
 
 #endif // CONTENT_TYPES_H

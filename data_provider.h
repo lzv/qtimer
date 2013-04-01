@@ -5,6 +5,7 @@
 #include <QString>
 #include <QObject>
 #include <QSqlDatabase>
+#include <QMap>
 
 // Это класс, осуществляющий запросы к БД и предоставляющий данные остальной программе. Поддерживается только SQLite средствами Qt.
 
@@ -38,6 +39,8 @@ class data_provider : public QObject
 		bool check_allow_udpate_day (day & element, QString & error_message);
 		bool check_allow_add_work (work & element, QString & error_message);
 		bool check_allow_update_work (work & element, QString & error_message);
+		bool check_allow_add_time_period (time_period & element, QString & error_message);
+		bool check_allow_update_time_period (time_period & element, QString & error_message);
 
 	public:
 		static QString DATETIME_DB_FORMAT;
@@ -49,11 +52,15 @@ class data_provider : public QObject
 		bool isOpen () {return cur_db.isOpen();}
 
 		bool set_file (const QString & full_name, QString * p_error_message = 0); // Установка нового файла БД. Возвращает true, если файл существует и его можно открыть на запись, либо файла не существует и его можно создать. Иначе возвращает false, не меняя текущие данные. В этом случае error_message перезаписывается текстом ошибки.
+		void check_last_time_period_for_close (); // Если последний временной промежуток еще не закрыт, а учитываемый день уже закончился, закрываем промежуток на момент окончания дня.
 		
 		// Методы получения данных.
 		day get_last_day ();		// Последний день из БД. Если дней нет, возвращается не валидный день.
 		work get_work (int id);		// Если id <= 0 или работы нет в БД, возвращается невалидный work.
 		QList<work> get_works ();	// Получить все дела из БД.
+		time_period get_last_time_period ();					// Возвращается последний временной период. 
+		QList<time_period> get_time_periods_for_current_day ();	// Все периоды за последний день.
+		QMap<work, int> get_planned_works_for_last_day ();		// Дела, которые еще запланированы на сегодя, и количество оставшихся секунд.
 		
 		// Методы модификации данных. Данные передаются не по ссылке, а копируются.
 		bool add_day (day element, QString * error_message = 0);
@@ -61,6 +68,8 @@ class data_provider : public QObject
 		bool add_work (work element, QString * error_message = 0);
 		bool update_work (work element, QString * error_message = 0);
 		bool delete_work (int id, QString * error_message = 0);
+		bool add_time_period (time_period element, QString * error_message = 0);
+		bool update_time_period (time_period element, QString * error_message = 0);
 
 	signals:
 		void database_file_was_changed ();	// Была открыта другая БД.

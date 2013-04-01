@@ -43,15 +43,18 @@ bool time_count::set_from_string (const QString & HH_MM_SS) {
 
 QString time_count :: get_string_for_print (char type) const {
 	QString result("");
+	QString sh = QObject::tr("h.", "time reduction");
+	QString sm = QObject::tr("m.", "time reduction");
+	QString ss = QObject::tr("s.", "time reduction");
 	if (type == 'w') {
 		// Как нормальный вывод, но если первые значения нулевые, их место заполняется пробелами. Так же добавляется пробел к значениям меньшим 10.
-		result = QString("%1 %2 %3").arg(h == 0 ? "    " : (h < 10 ? " " : "") + QString().setNum(h) + "ч.").arg(h == 0 and m == 0 ? "    " : (m < 10 ? " " : "") + QString().setNum(m) + "м.").arg((s < 10 ? " " : "") + QString().setNum(s) + "с.");
+		result = QString("%1 %2 %3").arg(h == 0 ? "    " : (h < 10 ? " " : "") + QString().setNum(h) + sh).arg(h == 0 and m == 0 ? "    " : (m < 10 ? " " : "") + QString().setNum(m) + sm).arg((s < 10 ? " " : "") + QString().setNum(s) + ss);
 	} else if (type == 'c') {
 		// Показываются только ненулевые значения.
-		result = QString("%1%2%3").arg(h == 0 ? "" : QString().setNum(h) + "ч." + (m == 0 and s == 0 ? "" : " ")).arg(m == 0 ? "" : QString().setNum(m) + "м." + (s == 0 ? "" : " ")).arg(s == 0 and (h != 0 or m != 0) ? "" : QString().setNum(s) + "с.");
+		result = QString("%1%2%3").arg(h == 0 ? "" : QString().setNum(h) + sh + (m == 0 and s == 0 ? "" : " ")).arg(m == 0 ? "" : QString().setNum(m) + sm + (s == 0 ? "" : " ")).arg(s == 0 and (h != 0 or m != 0) ? "" : QString().setNum(s) + ss);
 	} else {
 		// Нулевые значения показываются, если перед ними был вывод.
-		result = QString("%1%2%3").arg(h == 0 ? "" : QString().setNum(h) + "ч. ").arg(h == 0 and m == 0 ? "" : QString().setNum(m) + "м. ").arg(QString().setNum(s) + "с.");
+		result = QString("%1%2%3").arg(h == 0 ? "" : QString().setNum(h) + sh + " ").arg(h == 0 and m == 0 ? "" : QString().setNum(m) + sm + " ").arg(QString().setNum(s) + ss);
 	}
 	return result;
 }
@@ -62,10 +65,6 @@ long int time_count::get_in_seconds () const {
 
 time_count time_count::operator - (const time_count & val) const {
 	return time_count(get_in_seconds() - val.get_in_seconds());
-}
-
-time_count operator - (const QDateTime & val_left, const QDateTime & val_right) {
-	return time_count(val_left.isValid() and val_right.isValid() ? val_left.secsTo(val_right) : 0);
 }
 
 bool day::isCorrect () const {
@@ -80,4 +79,8 @@ long int day::getSeconds () const {
 	long int result = 0;
 	if (isCorrect()) result = end.toTime_t() - start.toTime_t();
 	return result;
+}
+
+int time_period::length_sec () const {
+	return isCorrect() ? start.secsTo(end.isValid() ? end : QDateTime::currentDateTime()) : 0;
 }

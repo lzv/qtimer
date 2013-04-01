@@ -54,13 +54,13 @@ int MainWindow::get_need_main_widget_index ()
 
 void MainWindow::create_works_list_window ()
 {
-	QLabel * message = new QLabel(tr("You can add, delete or edit works. For edit work make double click on cell. For add work insert data in the lowest row. For delete work click delete button. <b>Warning:</b> you can not restore work after deletion."));
+	QLabel * message = new QLabel(tr("You can add, delete or edit works. For edit work make double click on cell. For add work insert data in the lowest row. For delete work click delete button. <b>Warning:</b> you can not restore work after deletion.<br /> Note: plan in minutes."));
 	message->setWordWrap(true);
 	works_list_table = new QTableWidget();
 	works_list_table->setColumnCount(3);
 	works_list_table->setHorizontalHeaderLabels(QStringList() << tr("Name") << tr("Plan") << "");
-	works_list_table->setColumnWidth(0, 515);
-	works_list_table->setColumnWidth(1, 40);
+	works_list_table->setColumnWidth(0, 495);
+	works_list_table->setColumnWidth(1, 45);
 	QPushButton * close_button = new QPushButton(tr("Close"));
 	connect(close_button, SIGNAL(clicked()), & works_list_window, SLOT(hide()));
 	QVBoxLayout * lay = new QVBoxLayout;
@@ -181,16 +181,64 @@ void MainWindow::update_widget_out_of_day () {
 QWidget * MainWindow::create_widget_in_day () {
 	QWidget * widg = new QWidget;
 	in_day_line_of_day = new dayInLine;
-	
-	QGridLayout * lay = get_stretch_QGridLayout(0, 2, 0, 2, 1, 10);
-	lay->addWidget(in_day_line_of_day, 1, 1);
-	
+	works_dropdown_list = new QComboBox;
+	start_stop_button = new QPushButton(tr("Start"));
+	connect(start_stop_button, SIGNAL(clicked()), SLOT(start_stop_button_clicked()));
+	QHBoxLayout * hlay_ddlist = new QHBoxLayout;
+	hlay_ddlist->addWidget(works_dropdown_list, 1);
+	hlay_ddlist->addWidget(start_stop_button, 0);
+	QLabel * message_for_planned_table = new QLabel(tr("Planned works for today:"), this);
+	message_for_planned_table->setWordWrap(true);
+	planned_works_table = new QTableWidget;
+	planned_works_table->setColumnCount(2);
+	planned_works_table->setHorizontalHeaderLabels(QStringList() << tr("Work name") << tr("Time left"));
+	planned_works_table->setColumnWidth(0, 390);
+	planned_works_table->setColumnWidth(1, 90);
+	QGridLayout * lay = get_stretch_QGridLayout(0, 5, 0, 2, 1, 10);
+	lay->addLayout(hlay_ddlist, 1, 1);
+	lay->setRowStretch(1, 0);
+	lay->addWidget(in_day_line_of_day, 2, 1);
+	lay->addWidget(message_for_planned_table, 3, 1);
+	lay->setRowStretch(3, 0);
+	lay->addWidget(planned_works_table, 4, 1);
 	widg->setLayout(lay);
 	return widg;
 }
 
 void MainWindow::update_widget_in_day () {
-	
+	works_dropdown_list->clear();
+	QList<work> works = data_provider::get_obj()->get_works();
+	time_period last_tp = data_provider::get_obj()->get_last_time_period();
+	bool now_work_tracking = last_tp.isValid() and last_tp.isOpened();
+	int current_work_id = last_tp.isValid() ? last_tp.work_id : 0;
+	int works_count = works.count();
+	for (int i = 0; i < works_count; ++i) {
+		works_dropdown_list->addItem(works[i].name, works[i].id);
+		if (works[i].id == current_work_id) works_dropdown_list->setCurrentIndex(i);
+	}
+	works_dropdown_list->setEnabled(!now_work_tracking);
+	start_stop_button->setText(now_work_tracking ? tr("Stop") : tr("Start"));
+	QMap<work, int> planned_works = data_provider::get_obj()->get_planned_works_for_last_day();
+	int row_count = planned_works_table->rowCount();
+	for (int i = 0; i < row_count; ++i) planned_works_table->removeRow(0);
+	row_count = 0;
+	time_count tc_obj;
+	for (QMap<work, int>::const_iterator i = planned_works.begin(); i != planned_works.end(); ++i) {
+		planned_works_table->insertRow(row_count);
+		QTableWidgetItem * name_item = new QTableWidgetItem;
+		QTableWidgetItem * plan_item = new QTableWidgetItem;
+		name_item->setFlags(name_item->flags() & ~Qt::ItemIsSelectable & ~Qt::ItemIsEditable);
+		plan_item->setFlags(plan_item->flags() & ~Qt::ItemIsSelectable & ~Qt::ItemIsEditable);
+		name_item->setData(Qt::DisplayRole, i.key().name);
+		name_item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+		tc_obj.set_from_seconds(i.value());
+		plan_item->setData(Qt::DisplayRole, tc_obj.get_string_for_print('c'));
+		plan_item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+		planned_works_table->setItem(row_count, 0, name_item);
+		planned_works_table->setItem(row_count, 1, plan_item);
+		++row_count;
+	}
+	in_day_line_of_day->update();
 }
 
 void MainWindow::add_day_button_clicked ()
@@ -285,7 +333,7 @@ void MainWindow::create_main_menu ()
 void MainWindow::show_select_file_dialog (const QString * cur_dir)
 {
 	QString opened_file = data_provider::get_obj()->get_file_full_name();
-	QString dir = cur_dir ? *cur_dir : (opened_file.isEmpty() ? "." : opened_file);
+	QString dir = cur_dir ? *cur_dir : (opened_file.isEmpty() ? QDir::homePath() : opened_file);
 	QString selected_file = QFileDialog::getSaveFileName(this, tr("Select/create file..."), dir, "", 0, QFileDialog::DontConfirmOverwrite);
 	QString error("");
 	if (!selected_file.isEmpty() and !data_provider::get_obj()->set_file(selected_file, & error)) {
@@ -298,7 +346,8 @@ void MainWindow::show_about_message () {
 	QMessageBox::about(0, tr("About"), tr("Programm for time managment. \nCreated by LzV in 2013."));
 }
 
-void MainWindow::show_works_list_window () {
+void MainWindow::show_works_list_window ()
+{
 	QPoint main_window_center = rect().center(), main_pos = pos();
 	main_pos.rx() += main_window_center.x() - (works_list_window.width() / 2);
 	main_pos.ry() += main_window_center.y() - (works_list_window.height() / 2);
@@ -307,14 +356,16 @@ void MainWindow::show_works_list_window () {
 	works_list_window.show();
 }
 
-void MainWindow::change_main_widget () {
+void MainWindow::change_main_widget ()
+{
 	int need_index = get_need_main_widget_index();
 	if (need_index == main_widgets_indexes["out of day"]) update_widget_out_of_day();
 	else if (need_index == main_widgets_indexes["in day"]) update_widget_in_day();
 	main_widgets->setCurrentIndex(need_index);
 }
 
-void MainWindow::set_params_from_new_db () {
+void MainWindow::set_params_from_new_db ()
+{
 	QString new_db_name = (data_provider::get_obj()->isOpen() ? data_provider::get_obj()->get_file_full_name() : "");
 	status_bar_label->setText(new_db_name.isEmpty() ? tr("Data file is not open.") : tr("Current data file") + ": " + new_db_name);
 	settings.setValue("last_data_file", new_db_name);
@@ -325,7 +376,8 @@ void MainWindow::show_warning_message (const QString & title, const QString & me
 	QMessageBox(QMessageBox::Warning, title, message, QMessageBox::Ok).exec();
 }
 
-void MainWindow::delete_work (int id) {
+void MainWindow::delete_work (int id)
+{
 	QString error("");
 	QMessageBox question(QMessageBox::Warning, tr("Are you sure?"), tr("You can not restore work after deletion. Do you really want to delete?"), QMessageBox::Yes | QMessageBox::No);
 	if (question.exec() == QMessageBox::Yes and !data_provider::get_obj()->delete_work(id, & error)) {
@@ -334,7 +386,8 @@ void MainWindow::delete_work (int id) {
 	}
 }
 
-void MainWindow::modif_work_from_table_widget (int row, int col) {
+void MainWindow::modif_work_from_table_widget (int row, int col)
+{
 	if (need_reaction_for_signal_cellChanged) {
 		int last_row = works_list_table->rowCount() - 1;
 		QString new_name = works_list_table->item(row, 0)->text();
@@ -360,4 +413,8 @@ void MainWindow::modif_work_from_table_widget (int row, int col) {
 			}
 		}
 	}
+}
+
+void MainWindow::start_stop_button_clicked () {
+	
 }
