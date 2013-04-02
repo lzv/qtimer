@@ -90,14 +90,14 @@ void dayInLine::paintEvent (QPaintEvent * event)
 		painter.drawLine(now_line_x, wrect.top(), now_line_x, wrect.bottom());
 		
 		painter.setPen(QColor("#0000aa"));
-		QRect total_time_left_text(wrect.right() - 205, wrect.top(), 205, 21);
+		QRect total_time_left_text(wrect.right() - 270, wrect.top(), 270, 21);
 		painter.fillRect(total_time_left_text, painter.background());
-		painter.drawText(total_time_left_text, Qt::AlignRight | Qt::AlignVCenter, tr("Total time left:   ") + to_day_end.get_string_for_print('c'));
+		painter.drawText(total_time_left_text, Qt::AlignRight | Qt::AlignVCenter, tr("Total time left:") + "   " + to_day_end.get_string_for_print('c'));
 		
 		painter.setPen(QColor(free_to_day_end.get_in_seconds() < 0 ? "#aa0000" : "#0000aa"));
-		QRect total_free_time_left_text(wrect.right() / 2 - 125, wrect.bottom() - 20, 250, 21);
+		QRect total_free_time_left_text(wrect.right() / 2 - 185, wrect.bottom() - 20, 370, 21);
 		painter.fillRect(total_free_time_left_text, painter.background());
-		painter.drawText(total_free_time_left_text, Qt::AlignCenter, tr("Total free time left:   ") + free_to_day_end.get_string_for_print('c'));
+		painter.drawText(total_free_time_left_text, Qt::AlignCenter, tr("Total free time left:") + "   " + free_to_day_end.get_string_for_print('c'));
 		
 		painter.setPen(QColor("#0000aa"));
 		QRect begin_date_rect(line_rect.left(), line_rect.top(), 40, 50);

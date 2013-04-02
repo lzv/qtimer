@@ -15,3 +15,5 @@ HEADERS  += mainwindow.h \
     content_types.h \
     utils.h \
     myWidgets.h
+
+TRANSLATIONS += lang_ru.ts

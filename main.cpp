@@ -9,6 +9,13 @@ int main(int argc, char *argv[])
 	QTextCodec::setCodecForLocale(codec);
 
     QApplication a(argc, argv);
+	QString sys_lang = QLocale::system().name();
+	QTranslator translator;
+	if (sys_lang == "ru_RU" or sys_lang == "ru") {
+		translator.load("lang_ru", ".");
+		a.installTranslator(& translator);
+	}
+	
     MainWindow w;
     w.show();
     
