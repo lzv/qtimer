@@ -192,8 +192,8 @@ QWidget * MainWindow::create_widget_in_day () {
 	planned_works_table = new QTableWidget;
 	planned_works_table->setColumnCount(2);
 	planned_works_table->setHorizontalHeaderLabels(QStringList() << tr("Work name") << tr("Time left"));
-	planned_works_table->setColumnWidth(0, 390);
-	planned_works_table->setColumnWidth(1, 90);
+	planned_works_table->setColumnWidth(0, 363);
+	planned_works_table->setColumnWidth(1, 100);
 	QGridLayout * lay = get_stretch_QGridLayout(0, 5, 0, 2, 1, 10);
 	lay->addLayout(hlay_ddlist, 1, 1);
 	lay->setRowStretch(1, 0);
@@ -359,8 +359,13 @@ void MainWindow::show_works_list_window ()
 void MainWindow::change_main_widget ()
 {
 	int need_index = get_need_main_widget_index();
-	if (need_index == main_widgets_indexes["out of day"]) update_widget_out_of_day();
-	else if (need_index == main_widgets_indexes["in day"]) update_widget_in_day();
+	if (need_index == main_widgets_indexes["in day"]) {
+		if (!timer.isActive()) timer.start(1000, this);
+		update_widget_in_day();
+	} else {
+		if (timer.isActive()) timer.stop();
+		if (need_index == main_widgets_indexes["out of day"]) update_widget_out_of_day();
+	}
 	main_widgets->setCurrentIndex(need_index);
 }
 
@@ -415,6 +420,37 @@ void MainWindow::modif_work_from_table_widget (int row, int col)
 	}
 }
 
-void MainWindow::start_stop_button_clicked () {
-	
+void MainWindow::timerEvent (QTimerEvent * ev)
+{
+	if (ev->timerId() == timer.timerId()) {
+		day last_day = data_provider::get_obj()->get_last_day();
+		if (last_day.end < QDateTime::currentDateTime()) {
+			data_provider::get_obj()->check_last_time_period_for_close();
+			change_main_widget();
+		} else {
+			time_period last_tp = data_provider::get_obj()->get_last_time_period();
+			if (last_tp.isValid() and last_tp.isOpened()) update_widget_in_day();
+			else in_day_line_of_day->update();
+		}
+	} else {
+		QMainWindow::timerEvent(ev);
+	}
+}
+
+void MainWindow::start_stop_button_clicked ()
+{
+	if (works_dropdown_list->count() > 0) {
+		time_period last_tp = data_provider::get_obj()->get_last_time_period();
+		QString error;
+		if (last_tp.isValid() and last_tp.isOpened()) {
+			last_tp.end = QDateTime::currentDateTime();
+			if (data_provider::get_obj()->update_time_period(last_tp, & error)) update_widget_in_day();
+			else show_warning_message(tr("Work stop error"), error);
+		} else {
+			int work_id = works_dropdown_list->itemData(works_dropdown_list->currentIndex()).toInt();
+			time_period new_tp(0, work_id, QDateTime::currentDateTime());
+			if (data_provider::get_obj()->add_time_period(new_tp, & error)) update_widget_in_day();
+			else show_warning_message(tr("Work start error"), error);
+		}
+	}
 }

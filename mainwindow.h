@@ -12,6 +12,7 @@
 #include <QTableWidget>
 #include <QSignalMapper>
 #include <QComboBox>
+#include <QBasicTimer>
 #include "data_provider.h"
 #include "myWidgets.h"
 
@@ -39,6 +40,7 @@ class MainWindow : public QMainWindow
 		QComboBox * works_dropdown_list;	// Выпадающий список дел.
 		QPushButton * start_stop_button;	// Кнопка начала/остановки учета.
 		QTableWidget * planned_works_table;	// Список дел, которые еще запланированы на текущий день.
+		QBasicTimer timer;					// Таймер для обновления окна во время учета дела.
 		
 		// Список дел.
 		QWidget works_list_window;
@@ -61,6 +63,9 @@ class MainWindow : public QMainWindow
 		int get_need_main_widget_index ();		// Индекс главного виджета в зависимости от текущего состояния.
 		QGridLayout * get_stretch_QGridLayout (int row1, int row2, int col1, int col2, int stretch, int other_stretch = 0); // Возвращает QGridLayout, в котором указанным строкам и столбцам установлен коэффициент растяжения stretch. Тем, которые между указанных, устанавливается other_stretch.
 		void show_warning_message (const QString & title, const QString & message); // Показ окошка с сообщением и кнопкой закрытия.
+		
+	protected:
+		void timerEvent (QTimerEvent *);
     
 	public:
 		MainWindow ();
