@@ -17,3 +17,4 @@ HEADERS  += mainwindow.h \
     myWidgets.h
 
 TRANSLATIONS += lang_ru.ts
+

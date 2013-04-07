@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 	QString sys_lang = QLocale::system().name();
 	QTranslator translator;
 	if (sys_lang == "ru_RU" or sys_lang == "ru") {
-		translator.load("lang_ru", ".");
+		translator.load("lang_ru", QCoreApplication::applicationDirPath());
 		a.installTranslator(& translator);
 	}
 	
