@@ -1,6 +1,6 @@
 QT       += core gui sql
 
-TARGET = Qtimer
+TARGET = qtimer
 TEMPLATE = app
 
 SOURCES += main.cpp\

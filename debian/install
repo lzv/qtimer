@@ -1,4 +1,5 @@
 debian/qtimer.png usr/share/pixmaps
 debian/qtimer.desktop usr/share/applications
+qtimer usr/bin
 lang_ru.qm usr/bin
 
