@@ -1,3 +1,4 @@
+
 [Desktop Entry]
 Type=Application
 Name=Qtimer
@@ -5,3 +6,4 @@ Comment=Management your time for work and for rest
 Exec=qtimer
 Icon=qtimer
 Categories=Office;
+Name[ru]=qtimer
