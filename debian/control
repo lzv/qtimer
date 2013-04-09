@@ -3,7 +3,7 @@ Section: misc
 Priority: optional
 Maintainer: Victor <vic2_@mail.ru>
 Build-Depends: debhelper (>= 7.4.12),
-               libqt4-dev (>= 4.5.0)
+               libqt4-dev (>= 4.8.0)
 Vcs-Git: git://github.com/lzv/qtimer.git
 Vcs-Browser: https://github.com/lzv/qtimer.git
 Homepage: https://github.com/lzv/qtimer
