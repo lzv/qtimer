@@ -1,0 +1,14 @@
+Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=135
+Name: qtimer
+Maintainer: Victor <vic2_@mail.ru>
+Source: https://github.com/lzv/qtimer
+
+Copyright: 2013 Victor <vic2_@mail.ru>
+License: GPL-3
+
+Files: *
+Copyright: 2013 Victor <vic2_@mail.ru>
+License: GPL-3
+
+  On Debian systems, the full text of the GNU General Public License version 3 can be found in the file `/usr/share/common-licenses/GPL-3'.
+

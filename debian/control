@@ -1,0 +1,21 @@
+Source: qtimer
+Section: misc
+Priority: optional
+Maintainer: Victor <vic2_@mail.ru>
+Build-Depends: debhelper (>= 7.4.12),
+               libqt4-dev (>= 4.5.0)
+Vcs-Git: git://github.com/lzv/qtimer.git
+Vcs-Browser: https://github.com/lzv/qtimer.git
+Homepage: https://github.com/lzv/qtimer
+
+Package: qtimer
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Management your time for work and for rest. The program is written using the Qt library.
+ The program is designed to account for the time of the works, and most importantly, for the control of the remaining free time.
+ You make list of works, set planned time for each, you'll spend on them every day. Then, you set time of end of current working day. It will begin from current moment. Or you can prolong last day, if it exists.
+ Then the programm displays "time line" of the current day. "Time line" has small labels of hours and big label of current moment. To the left of the current moment in green shows the time already spent on the works. On the right is shown in red remaining planned time.
+ Planned time is divided into sections of about 45 minutes, and these areas are allocated for regular intervals of rest between them. Thus you can see at a glance the workload and more accurately allocate time for rest and work.
+ Separately show the amount of time before the end of the day and the amount of free time.
+ Separately display a list of works that are scheduled for today. When plan of work fulfilled, work disappears from the list.
+
