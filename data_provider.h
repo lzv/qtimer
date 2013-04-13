@@ -24,8 +24,8 @@ class data_provider : public QObject
 	// Поддержка шаблона "одиночка" завершена.
 
 	private:
-		static QSqlDatabase cur_db;	// Соединение с БД, где храним данные.
-		static QSqlDatabase new_db; // Соединение для проверки БД при изменении файла. Обычно закрыто.
+		QSqlDatabase cur_db;	// Соединение с БД, где храним данные.
+		QSqlDatabase new_db; // Соединение для проверки БД при изменении файла. Обычно закрыто.
 
 		QString file_full_name;	// Полное имя файла с каталогом.
 		QString file_dir;		// Только каталог.

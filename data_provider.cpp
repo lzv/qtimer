@@ -7,8 +7,6 @@
 #include <QSqlQuery>
 #include <QSqlRecord>
 
-QSqlDatabase data_provider::cur_db = QSqlDatabase::addDatabase("QSQLITE");
-QSqlDatabase data_provider::new_db = QSqlDatabase::addDatabase("QSQLITE", "new db");
 QString data_provider::DATETIME_DB_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
 data_provider * data_provider::get_obj() {
@@ -16,7 +14,11 @@ data_provider * data_provider::get_obj() {
 	return & obj;
 }
 
-data_provider::data_provider () : file_full_name(""), file_dir(""), file_name("") {}
+data_provider::data_provider () : file_full_name(""), file_dir(""), file_name("")
+{
+	cur_db = QSqlDatabase::addDatabase("QSQLITE");
+	new_db = QSqlDatabase::addDatabase("QSQLITE", "new db");
+}
 
 data_provider::~data_provider () {
 	if (cur_db.isOpen()) cur_db.close();
