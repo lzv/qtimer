@@ -1,4 +1,8 @@
-#include <QtGui>
+#ifdef HAVE_QT5
+	#include <QtWidgets>
+#else
+	#include <QtGui>
+#endif
 #include "mainwindow.h"
 #include "data_provider.h"
 

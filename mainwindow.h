@@ -1,7 +1,11 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QtGui/QMainWindow>
+#ifdef HAVE_QT5
+	#include <QMainWindow>
+#else 
+	#include <QtGui/QMainWindow>
+#endif
 #include <QMap>
 #include <QStackedWidget>
 #include <QLabel>

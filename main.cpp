@@ -1,11 +1,17 @@
+#ifdef HAVE_QT5
+	#include <QApplication>
+#endif
+
 #include <QtGui>
 #include "mainwindow.h"
 
 int main(int argc, char *argv[])
 {
 	QTextCodec* codec = QTextCodec::codecForName("UTF-8");
+#ifndef HAVE_QT5
 	QTextCodec::setCodecForTr(codec);
 	QTextCodec::setCodecForCStrings(codec);
+#endif
 	QTextCodec::setCodecForLocale(codec);
 
     QApplication a(argc, argv);
